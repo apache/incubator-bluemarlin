@@ -144,6 +144,7 @@ class TestMainClean(unittest.TestCase):
 
         # Validate the cleaned clicklog table.
         df_clicklog = util.load_df(self.hive_context, clicklog_output_table)
+        print(df_clicklog.sort('action_time').show(100, False))
         self.validate_cleaned_log(df_clicklog, conditions, df_persona, df_keywords, df_log, cfg['pipeline']['main_clean']['did_bucket_num'])
 
         # Validate the cleaned showlog table.
