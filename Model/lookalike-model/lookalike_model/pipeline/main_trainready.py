@@ -21,13 +21,20 @@ import timeit
 
 from pyspark import SparkContext
 from pyspark.sql import functions as fn
-from pyspark.sql.functions import lit, col, udf, collect_list, concat_ws, first, create_map, monotonically_increasing_id
+from pyspark.sql.functions import lit, col, udf, collect_list, concat_ws, first, create_map, monotonically_increasing_id, row_number
 from pyspark.sql.window import Window
-from pyspark.sql.types import IntegerType, ArrayType, StringType
+from pyspark.sql.types import IntegerType, ArrayType, StringType, LongType
 from pyspark.sql import HiveContext
 from datetime import datetime, timedelta
 from util import write_to_table, write_to_table_with_partition, print_batching_info, resolve_placeholder, load_config, load_batch_config, load_df
 from itertools import chain
+
+MAX_USER_IN_BUCKET = 10**9
+
+
+def date_to_timestamp(dt):
+    epoch = datetime.utcfromtimestamp(0)
+    return int((dt - epoch).total_seconds())
 
 
 def generate_trainready(hive_context, batch_config,
@@ -43,7 +50,7 @@ def generate_trainready(hive_context, batch_config,
             first('gender').alias('gender'),
             first('did_bucket').alias('did_bucket'),
             fn.sum(col('is_click')).alias('kw_clicks_count'),
-            fn.count(fn.when(col('is_click') == 0, 1).otherwise(0)).alias('kw_shows_count'),
+            fn.sum(fn.when(col('is_click') == 0, 1).otherwise(0)).alias('kw_shows_count'),
         )
 
         df = df.withColumn('kwi_clicks_count', concat_ws(":", col('keyword_index'), col('kw_clicks_count')))
@@ -95,7 +102,7 @@ def generate_trainready(hive_context, batch_config,
             tmp_list = []
             for _dict in attr_map_list:
                 tmp_list.append((_dict['interval_starting_time'], _dict))
-            tmp_list.sort(reverse=True)
+            tmp_list.sort(reverse=True, key=lambda x: x[0])
 
             interval_starting_time = []
             interval_keywords = []
@@ -109,7 +116,6 @@ def generate_trainready(hive_context, batch_config,
                 kwi_show_counts.append(_dict['kwi_show_counts'])
                 kwi_click_counts.append(_dict['kwi_click_counts'])
             return [interval_starting_time, interval_keywords, kwi, kwi_show_counts, kwi_click_counts]
-
         df = df.withColumn('metrics_list', udf(udf_function, ArrayType(ArrayType(StringType())))(col('attr_map_list')))
         return df
 
@@ -130,8 +136,8 @@ def generate_trainready(hive_context, batch_config,
     ending_time = datetime.strptime(end_date, "%Y-%m-%d")
 
     all_intervals = set()
-    st = int(starting_time.strftime("%s"))
-    et = int(ending_time.strftime("%s"))
+    st = date_to_timestamp(starting_time)
+    et = date_to_timestamp(ending_time)
     x = st
     while x < et:
         interval_point = x - x % interval_time_in_seconds
@@ -191,7 +197,9 @@ def generate_trainready(hive_context, batch_config,
             df = df.withColumn(feature_name, col('metrics_list').getItem(i))
 
         # Add did_index
-        df = df.withColumn('did_index', monotonically_increasing_id())
+        w = Window.orderBy("did_bucket", "did")
+        df = df.withColumn('row_number', row_number().over(w))
+        df = df.withColumn('did_index', udf(lambda x: did_bucket*(MAX_USER_IN_BUCKET) + x, LongType())(col('row_number')))
         df = df.select('age', 'gender', 'did', 'did_index', 'interval_starting_time', 'interval_keywords',
                        'kwi', 'kwi_show_counts', 'kwi_click_counts', 'did_bucket')
 
