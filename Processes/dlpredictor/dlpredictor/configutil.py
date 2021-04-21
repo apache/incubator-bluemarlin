@@ -14,18 +14,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging.config
-import os
+import re
 
-# Get the base path of this installation.
-# Assuming that this file is packaged in a .egg file.
-basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-path = 'conf/log.conf'
-fullpath = os.path.join(basedir, path)
+def resolve_placeholder(in_dict):
+    stack = []
+    for key in in_dict.keys():
+        stack.append((in_dict, key))
+    while len(stack) > 0:
+        (_dict, key) = stack.pop()
+        value = _dict[key]
+        if type(value) == dict:
+            for _key in value.keys():
+                stack.append((value, _key))
+        elif type(value) == str:
+            z = re.findall('\{(.*?)\}', value)
+            if len(z) > 0:
+                new_value = value
+                for item in z:
+                    if item in in_dict and type(in_dict[item]) == str:
+                        new_value = new_value.replace(
+                            '{'+item+'}', in_dict[item])
+                _dict[key] = new_value
 
-logging.config.fileConfig(fullpath)
-logger_operation = logging.getLogger('operation')
-logger_run = logging.getLogger('run')
-logger_security = logging.getLogger('security')
-logger_user = logging.getLogger('user')
-logger_interface = logging.getLogger('interface')
