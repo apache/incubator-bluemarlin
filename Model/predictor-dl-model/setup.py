@@ -20,7 +20,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="predictor_dl_model", # Replace with your own username
+    name="predictor_dl_model", # This is the package name.
     version="1.6.0",
     author="Reza Adibnia",
     author_email="radibnia@futurewei.com",
