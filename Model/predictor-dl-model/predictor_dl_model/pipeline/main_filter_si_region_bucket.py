@@ -147,6 +147,7 @@ def run(hive_context, conditions, factdata_table_name, output_table_name, region
 
         df = assign_new_bucket_id(df, new_bucket_size)
 
+        # Writing into partitions might throw some exceptions but does not impair data.
         __save_as_table(df, output_table_name, hive_context, first_round)
         print('Processed ' + str(start_bucket-1) + ' buckets.')
 
