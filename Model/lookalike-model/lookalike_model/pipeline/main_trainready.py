@@ -23,7 +23,7 @@ from pyspark import SparkContext
 from pyspark.sql import functions as fn
 from pyspark.sql.functions import lit, col, udf, collect_list, concat_ws, first, create_map, monotonically_increasing_id, row_number
 from pyspark.sql.window import Window
-from pyspark.sql.types import FloatType, IntegerType, ArrayType, StringType, LongType
+from pyspark.sql.types import IntegerType, ArrayType, StringType, LongType
 from pyspark.sql import HiveContext
 from datetime import datetime, timedelta
 from util import write_to_table, write_to_table_with_partition, print_batching_info, resolve_placeholder, load_config, load_batch_config, load_df
@@ -36,54 +36,10 @@ def date_to_timestamp(dt):
     epoch = datetime.utcfromtimestamp(0)
     return int((dt - epoch).total_seconds())
 
-def filter_users(df, show_threshold_low, show_threshold_high, active_interval_threshold, total_num_intervals):
-    def list_map_count(x):
-        value_total = 0
-        for cell in x:
-            key_values = cell.split(',')
-            for key_value in key_values:
-                print('list_map_count: {}'.format(key_value))
-                _, value = key_value.split(':')
-                value_total += int(value)
-        return float(value_total)/total_num_intervals
-
-    # Returns the ratio of items in the list that have non-zero values.
-    # def list_map_nonzero_count(x):
-    def list_map_nonzero_ratio(x):
-        active_intervals = 0
-        for cell in x:
-            key_values = cell.split(',')
-            for key_value in key_values:
-                print('list_map_nonzero_ratio: {}'.format(key_value))
-                _, value = key_value.split(':')
-                if int(value) != 0:
-                    active_intervals += 1
-                    break
-        return float(active_intervals)/total_num_intervals
-
-    # Aggregate user activity by impressions.
-    df = df.withColumn('total_show_count', udf(list_map_count, FloatType())(col('kwi_show_counts')))
-
-    # Filter out users below set activity level.
-    if show_threshold_low >= 0:
-        df = df.filter(df.total_show_count > show_threshold_low)
-    if show_threshold_high >= 0:
-        df = df.filter(df.total_show_count < show_threshold_high)
-
-    # Calculate the number of active intervals.
-    df = df.withColumn('show_active_interval_ratio', udf(list_map_nonzero_ratio, FloatType())(col('kwi_show_counts')))
-
-    # Filter out users below set number of active intervals.
-    if (active_interval_threshold >= 0):
-        df = df.filter(df.show_active_interval_ratio > active_interval_threshold)
-
-    return df
-
 
 def generate_trainready(hive_context, batch_config,
                         interval_time_in_seconds,
-                        logs_table_name, trainready_table, did_bucket_num, 
-                        show_threshold_low, show_threshold_high, active_interval_threshold):
+                        logs_table_name, trainready_table, did_bucket_num):
 
     def group_batched_logs(df_logs):
         # group logs from did + interval_time + keyword.
@@ -240,9 +196,6 @@ def generate_trainready(hive_context, batch_config,
         for i, feature_name in enumerate(['interval_starting_time', 'interval_keywords', 'kwi', 'kwi_show_counts', 'kwi_click_counts']):
             df = df.withColumn(feature_name, col('metrics_list').getItem(i))
 
-        # Filter the users by activity level.
-        df = filter_users(df, show_threshold_low, show_threshold_high, active_interval_threshold, len(all_intervals))
-
         # Add did_index
         w = Window.orderBy("did_bucket", "did")
         df = df.withColumn('row_number', row_number().over(w))
@@ -265,17 +218,11 @@ def run(hive_context, cfg):
 
     cfg_train = cfg['pipeline']['main_trainready']
     trainready_table = cfg_train['trainready_output_table']
-    show_threshold_low = cfg_train['show_threshold_low']
-    show_threshold_high = cfg_train['show_threshold_high']
-    active_interval_threshold = cfg_train['active_interval_threshold']
-
     did_bucket_num = cfg_clean['did_bucket_num']
 
     batch_config = load_batch_config(cfg)
 
-    generate_trainready(hive_context, batch_config, interval_time_in_seconds, 
-        logs_table_name, trainready_table, did_bucket_num, 
-        show_threshold_low, show_threshold_high, active_interval_threshold)
+    generate_trainready(hive_context, batch_config, interval_time_in_seconds, logs_table_name, trainready_table, did_bucket_num)
 
 
 if __name__ == "__main__":
