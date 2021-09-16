@@ -99,6 +99,9 @@ features:
               'task_id',
               'pps_inside_exprmt_ab_tag']
 pipeline:
+  main_keywords:
+    keyword_output_table: '{product_tag}_{pipeline_tag}_keywords'
+    keyword_threshold: 0.01  # Portion of showlog traffic that a keyword must reach to be included.
   main_clean:  
     did_bucket_num: 2 # Number of partitions for did
     load_logs_in_minutes: 14400 #1440/day, original=14400
@@ -161,9 +164,6 @@ pipeline:
     logs_output_table_name: '{product_tag}_{pipeline_tag}_logs'
   main_trainready:
     trainready_output_table: '{product_tag}_{pipeline_tag}_trainready'
-    show_threshold_low: 0.5     # per day (set to -1 for no low threshold)
-    show_threshold_high: -1     # per day (set to -1 for no high threshold)
-    active_interval_threshold: 0.2   # proportion of days  (set to -1 for no active day filter)
   tfrecords:
     tfrecords_statistics_path: '{product_tag}_{pipeline_tag}_tfrecord_statistics.pkl'
     tfrecords_hdfs_path: '{product_tag}_{pipeline_tag}_tfrecord' # it is hdfs location for tfrecords, over-writes the existing files
