@@ -15,4 +15,4 @@ notifications:
   commits:      commits@bluemarlin.apache.org
   issues:       issues@bluemarlin.apache.org
   pullrequests: dev@bluemarlin.apache.org
-  #jira_options: link label
+  jira_options: worklog
