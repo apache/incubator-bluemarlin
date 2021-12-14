@@ -1,0 +1,6 @@
+github:
+  features:
+    # Enable wiki for documentation
+    wiki: true
+    # Enable issue management
+    issues: true
