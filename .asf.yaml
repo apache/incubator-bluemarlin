@@ -1,6 +1,18 @@
 github:
+  description: "Blue Marlin is a critical web infrastructure for advertising based monetization. It is a cloud platform that adds intelligence to a plain Ad System."
+  #homepage:
+  labels:
+    - apache
+    - bluemalin
+
   features:
     # Enable wiki for documentation
     wiki: true
     # Enable issue management
     issues: true
+
+notifications:
+  commits:      commits@bluemarlin.apache.org
+  issues:       issues@bluemarlin.apache.org
+  pullrequests: dev@bluemarlin.apache.org
+  #jira_options: link label
