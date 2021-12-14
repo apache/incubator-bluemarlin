@@ -1,6 +1,18 @@
 github:
+  #description: ""
+  #homepage:
+  labels:
+    - apache
+    - bluemalin
+
   features:
     # Enable wiki for documentation
     wiki: true
     # Enable issue management
     issues: true
+
+notifications:
+  commits:      commits@bluemarlin.apache.org
+  issues:       issues@bluemarlin.apache.org
+  pullrequests: dev@bluemarlin.apache.org
+  #jira_options: link label
