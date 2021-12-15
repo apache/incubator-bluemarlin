@@ -3,7 +3,7 @@ github:
   #homepage:
   labels:
     - apache
-    - bluemalin
+    - bluemarlin
 
   features:
     # Enable wiki for documentation
