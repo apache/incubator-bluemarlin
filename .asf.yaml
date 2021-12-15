@@ -12,7 +12,7 @@ github:
     issues: true
 
 notifications:
-  commits:      commits@bluemarlin.incubator.apache.org
+  commits:      commits@bluemarlin.apache.org
   issues:       issues@bluemarlin.apache.org
   pullrequests: dev@bluemarlin.apache.org
   jira_options: link label worklog
