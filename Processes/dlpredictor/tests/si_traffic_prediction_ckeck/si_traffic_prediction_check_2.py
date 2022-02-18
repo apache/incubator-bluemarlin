@@ -235,9 +235,9 @@ if __name__ == "__main__":
         'uckey_attrs': ['m', 'si', 't', 'g', 'a', 'pm', 'r', 'ipl'],
         'es_host': '10.213.37.41',
         'es_port': '9200',
-        'es_predictions_index': 'dlpredictor_111021_no_residency_no_mapping_predictions',
+        'es_predictions_index': 'dlpredictor_111021_no_residency_no_mapping_predictions_test_12212021',
         'es_predictions_type': 'doc',
-        'report_table': 'si_traffic_prediction_check_111021_12012021'
+        'report_table': 'si_traffic_prediction_check_111021_12212021'
     }
 
     # list of days in ts_ver in ts table.
